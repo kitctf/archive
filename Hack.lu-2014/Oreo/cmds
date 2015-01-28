@@ -1,0 +1,29 @@
+set follow-fork-mode child
+b exit
+set $msgbuf = 0x0804a2c0
+set $chunk = 0x0804A2A0
+
+catch exec
+
+r tcp-listen:4444,reuseaddr exec:./oreo,PTY,raw,echo=0
+
+# log frees
+b free
+commands
+  p {int}($esp+4)
+  c
+end
+
+# log mallocs
+define fin_and_log
+  # workaround for stupid gdb
+  fin
+  p $eax
+  c
+end
+b malloc
+commands
+  fin_and_log
+end
+
+c
